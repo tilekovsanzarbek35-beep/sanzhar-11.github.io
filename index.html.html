@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Киберпространство // Вход в систему</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', 'Consolas', monospace;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #0a0a0a;
+            overflow: hidden;
+            position: relative;
+            color: #0f0;
+        }
+
+        /* Эффект падающих символов матрицы */
+        #matrixCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 950px;
+            background-color: rgba(5, 5, 10, 0.9);
+            border-radius: 5px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.2),
+                        inset 0 0 10px rgba(0, 255, 0, 0.1);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(5px);
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #0f0, #00ffaa, #0f0, #00ffaa);
+            z-index: -1;
+            border-radius: 7px;
+            animation: borderGlow 4s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+
+        .left-panel {
+            flex: 1;
+            background: linear-gradient(to bottom right, #001100, #003300);
+            color: #0f0;
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-right: 1px solid rgba(0, 255, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.05) 2px,
+                rgba(0, 255, 0, 0.05) 4px
+            );
+            pointer-events: none;
+        }
+
+        .left-panel h2 {
+            font-size: 26px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #0f0;
+            color: #0f0;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .left-panel h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(to right, #0f0, transparent);
+        }
+
+        .left-panel p {
+            font-size: 15px;
+            line-height: 1.6;
+            opacity: 0.8;
+            margin-bottom: 20px;
+            color: #8f8;
+        }
+
+        .terminal {
+            background-color: #001100;
+            border: 1px solid #0f0;
+            border-radius: 3px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        .terminal-line {
+            margin-bottom: 5px;
+            color: #8f8;
+        }
+
+        .terminal-line .prompt {
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        .terminal-line .command {
+            color: #8f8;
+        }
+
+        .terminal-line .output {
+            color: #0af;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: 50px 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .logo h1 {
+            color: #0f0;
+            font-size: 32px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 15px #0f0;
+            letter-spacing: 2px;
+        }
+
+        .logo p {
+            color: #8f8;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .logo::after {
+            content: '_';
+            animation: cursorBlink 1s infinite;
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        @keyframes cursorBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .form-header {
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            color: #0f0;
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .form-header p {
+            color: #8f8;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8f8;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #0f0;
+            z-index: 1;
+        }
+
+        .input-with-icon input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            background-color: rgba(0, 20, 0, 0.7);
+            border: 1px solid #0a0;
+            border-radius: 3px;
+            font-size: 16px;
+            color: #0f0;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-with-icon input:focus {
+            border-color: #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5),
+                        inset 0 0 10px rgba(0, 255, 0, 0.2);
+            outline: none;
+            background-color: rgba(0, 30, 0, 0.7);
+        }
+
+        .input-with-icon input::placeholder {
+            color: #080;
+            letter-spacing: 1px;
+        }
+
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+        }
+
+        .remember-me input {
+            margin-right: 8px;
+            accent-color: #0f0;
+        }
+
+        .remember-me label {
+            color: #8f8;
+        }
+
+        .forgot-password {
+            color: #0f0;
+            text-decoration: none;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .forgot-password:hover {
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .forgot-password::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: #0f0;
+            transition: width 0.3s;
+        }
+
+        .forgot-password:hover::after {
+            width: 100%;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, #001100, #003300);
+            color: #0f0;
+            border: 1px solid #0a0;
+            border-radius: 3px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(to right, #002200, #004400);
+            border-color: #0f0;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+            text-shadow: 0 0 10px #0f0;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .register-link {
+            text-align: center;
+            color: #8f8;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .register-link a {
+            color: #0f0;
+            text-decoration: none;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .register-link a:hover {
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .register-link a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: #0f0;
+            transition: width 0.3s;
+        }
+
+        .register-link a:hover::after {
+            width: 100%;
+        }
+
+        .hacking-status {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: rgba(0, 20, 0, 0.5);
+            border: 1px solid #0a0;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #8f8;
+        }
+
+        .status-line {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #0a0;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active {
+            background-color: #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                max-width: 500px;
+                margin: 20px;
+            }
+            
+            .left-panel {
+                padding: 30px;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+            }
+            
+            .right-panel {
+                padding: 40px 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .remember-forgot {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .logo h1 {
+                font-size: 26px;
+            }
+        }
+
+        /* Анимации и уведомления */
+        .error-message {
+            color: #f44;
+            font-size: 13px;
+            margin-top: 5px;
+            display: none;
+            text-shadow: 0 0 5px #f44;
+            font-weight: bold;
+        }
+
+        .success-message {
+            background-color: rgba(0, 30, 0, 0.8);
+            color: #0f0;
+            padding: 15px;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+            border: 1px solid #0a0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+            text-shadow: 0 0 5px #0f0;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #0f0, transparent);
+            box-shadow: 0 0 10px #0f0;
+            z-index: 2;
+            animation: scan 3s linear infinite;
+            display: none;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 #f0f;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 #0ff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(31px, 9999px, 94px, 0); }
+            5% { clip: rect(112px, 9999px, 76px, 0); }
+            10% { clip: rect(85px, 9999px, 77px, 0); }
+            15% { clip: rect(91px, 9999px, 32px, 0); }
+            20% { clip: rect(30px, 9999px, 73px, 0); }
+            25% { clip: rect(90px, 9999px, 22px, 0); }
+            30% { clip: rect(11px, 9999px, 14px, 0); }
+            35% { clip: rect(53px, 9999px, 39px, 0); }
+            100% { clip: rect(53px, 9999px, 39px, 0); }
+        }
+
+        @keyframes glitch-anim2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            5% { clip: rect(52px, 9999px, 74px, 0); }
+            10% { clip: rect(79px, 9999px, 85px, 0); }
+            15% { clip: rect(75px, 9999px, 5px, 0); }
+            20% { clip: rect(67px, 9999px, 61px, 0); }
+            25% { clip: rect(14px, 9999px, 79px, 0); }
+            30% { clip: rect(1px, 9999px, 66px, 0); }
+            35% { clip: rect(86px, 9999px, 30px, 0); }
+            100% { clip: rect(86px, 9999px, 30px, 0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas для эффекта матрицы -->
+    <canvas id="matrixCanvas"></canvas>
+    
+    <!-- Линия сканирования -->
+    <div class="scan-line" id="scanLine"></div>
+    
+    <div class="container">
+        <!-- Левая панель с терминалом -->
+        <div class="left-panel">
+            <h2 class="glitch" data-text="КИБЕРПРОСТРАНСТВО">КИБЕРПРОСТРАНСТВО</h2>
+            <p>Добро пожаловать в защищенный терминал доступа. Все подключения зашифрованы.</p>
+            <p>Несанкционированный доступ преследуется по закону.</p>
+            
+            <div class="terminal">
+                <div class="terminal-line">
+                    <span class="prompt">root@system:~$</span>
+                    <span class="command"> connect secure_server</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="output">Подключение к 192.168.1.1...</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="output">Шифрование: AES-256 активировано</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="output">Аутентификация: REQUIRED</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="prompt">root@system:~$</span>
+                    <span class="command"> status --security</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="output">Защита: УРОВЕНЬ 5</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="output">Система: ОПЕРАТИВНА</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая панель с формой -->
+        <div class="right-panel">
+            <div class="logo">
+                <h1>// SYS_ACCESS</h1>
+                <p>Терминал аутентификации</p>
+            </div>
+
+            <div class="form-header">
+                <h2>ВХОД В СИСТЕМУ</h2>
+                <p>Введите учетные данные для доступа к защищенным данным</p>
+            </div>
+
+            <!-- Сообщение об успешной авторизации -->
+            <div class="success-message" id="successMessage">
+                <i class="fas fa-terminal"></i> ДОСТУП РАЗРЕШЕН. ДОБРО ПОЖАЛОВАТЬ, АГЕНТ.
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-user-secret"></i> ИДЕНТИФИКАТОР</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="email" placeholder="agent_007@cyber.sec" required>
+                    </div>
+                    <div class="error-message" id="emailError">ОШИБКА: Неверный идентификатор</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-key"></i> КОД ДОСТУПА</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" placeholder="••••••••••" required>
+                    </div>
+                    <div class="error-message" id="passwordError">ОШИБКА: Неверный код доступа</div>
+                </div>
+
+                <div class="remember-forgot">
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember" checked>
+                        <label for="remember">Сохранить сессию</label>
+                    </div>
+                    <a href="#" class="forgot-password">Восстановить доступ</a>
+                </div>
+
+                <button class="submit-btn" onclick="window.location.href='nextpage.html'; return false;">
+    Подключиться
+</button>
+
+            </form>
+
+            <div class="register-link">
+                Новый агент? <a href="#" id="registerLink">Запросить доступ</a>
+            </div>
+
+            <div class="hacking-status">
+                <div class="status-line">
+                    <div class="status-dot active"></div>
+                    <span>Шифрование: AES-256 активен</span>
+                </div>
+                <div class="status-line">
+                    <div class="status-dot active"></div>
+                    <span>VPN-туннель: установлен</span>
+                </div>
+                <div class="status-line">
+                    <div class="status-dot"></div>
+                    <span>Защита от вторжения: активна</span>
+                </div>
+                <div class="status-line">
+                    <div class="status-dot active"></div>
+                    <span>Соединение: защищено</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Эффект падающих символов матрицы
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const symbols = "01";
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+        
+        for(let i = 0; i < columns; i++) {
+            drops[i] = Math.floor(Math.random() * canvas.height / fontSize) * fontSize;
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 10, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#0f0';
+            ctx.font = `${fontSize}px monospace`;
+            
+            for(let i = 0; i < drops.length; i++) {
+                const text = symbols[Math.floor(Math.random() * symbols.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                
+                drops[i]++;
+            }
+        }
+        
+        // Получаем элементы DOM
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+        const successMessage = document.getElementById('successMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        const scanLine = document.getElementById('scanLine');
+        const registerLink = document.getElementById('registerLink');
+        const statusDots = document.querySelectorAll('.status-dot');
+
+        // Функция проверки идентификатора
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email) || email.includes('agent_');
+        }
+
+        // Функция проверки пароля
+        function validatePassword(password) {
+            return password.length >= 8;
+        }
+
+        // Эффект мерцания точек статуса
+        setInterval(() => {
+            statusDots.forEach(dot => {
+                if(!dot.classList.contains('active')) {
+                    if(Math.random() > 0.7) {
+                        dot.classList.add('active');
+                        setTimeout(() => {
+                            dot.classList.remove('active');
+                        }, 1000);
+                    }
+                }
+            });
+        }, 2000);
+
+        // Обработчик отправки формы
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            let isValid = true;
+            
+            // Сбрасываем сообщения об ошибках
+            emailError.style.display = 'none';
+            passwordError.style.display = 'none';
+            
+            // Активируем линию сканирования
+            scanLine.style.display = 'block';
+            
+            // Проверяем идентификатор
+            if (!validateEmail(emailInput.value)) {
+                emailError.style.display = 'block';
+                isValid = false;
+            }
+            
+            // Проверяем пароль
+            if (!validatePassword(passwordInput.value)) {
+                passwordError.style.display = 'block';
+                isValid = false;
+            }
+            
+            // Если форма валидна, показываем успешное сообщение
+            if (isValid) {
+                // Изменяем текст и стиль кнопки
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> ПОДКЛЮЧЕНИЕ...';
+                submitBtn.disabled = true;
+                
+                // Имитируем взлом системы
+                setTimeout(() => {
+                    // Активируем все точки статуса
+                    statusDots.forEach(dot => {
+                        dot.classList.add('active');
+                    });
+                    
+                    // Показываем сообщение об успехе
+                    successMessage.style.display = 'block';
+                    submitBtn.innerHTML = '<i class="fas fa-check"></i> ДОСТУП РАЗРЕШЕН';
+                    submitBtn.style.background = 'linear-gradient(to right, #002200, #004400)';
+                    submitBtn.style.borderColor = '#0f0';
+                    submitBtn.style.boxShadow = '0 0 25px rgba(0, 255, 0, 0.7)';
+                    
+                    // Скрываем линию сканирования
+                    scanLine.style.display = 'none';
+                    
+                    // Через 4 секунды сбрасываем форму
+                    setTimeout(() => {
+                        // Имитируем переход в систему
+                        document.body.style.animation = 'borderGlow 1s';
+                        setTimeout(() => {
+                            alert('ПЕРЕХОД В ГЛАВНЫЙ ТЕРМИНАЛ...');
+                            loginForm.reset();
+                            successMessage.style.display = 'none';
+                            submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> ПОДКЛЮЧИТЬСЯ';
+                            submitBtn.disabled = false;
+                            submitBtn.style.background = 'linear-gradient(to right, #001100, #003300)';
+                            submitBtn.style.boxShadow = 'none';
+                            
+                            // Сбрасываем точки статуса
+                            statusDots.forEach((dot, index) => {
+                                if(index > 1) {
+                                    dot.classList.remove('active');
+                                }
+                            });
+                        }, 1000);
+                    }, 4000);
+                }, 2000);
+            } else {
+                // Если ошибка, скрываем линию сканирования через секунду
+                setTimeout(() => {
+                    scanLine.style.display = 'none';
+                }, 1000);
+            }
+        });
+
+        // Обработчики для интерактивных элементов
+        document.querySelector('.forgot-password').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Эффект взлома
+            const originalText = this.textContent;
+            this.textContent = 'ПОДКЛЮЧЕНИЕ К СЕРВЕРУ...';
+            this.style.color = '#f0f';
+            
+            setTimeout(() => {
+                this.textContent = 'ОТПРАВКА ЗАПРОСА...';
+                this.style.color = '#0ff';
+                
+                setTimeout(() => {
+                    this.textContent = 'ДОСТУП ВОССТАНОВЛЕН';
+                    this.style.color = '#0f0';
+                    
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.style.color = '#0f0';
+                        alert('На вашу зашифрованную почту отправлена инструкция по восстановлению доступа.');
+                    }, 1500);
+                }, 1500);
+            }, 1500);
+        });
+
+        registerLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Эффект glitch для заголовка
+            const formHeader = document.querySelector('.form-header h2');
+            formHeader.classList.add('glitch');
+            formHeader.setAttribute('data-text', 'ЗАПРОС ДОСТУПА');
+            formHeader.textContent = 'ЗАПРОС ДОСТУПА';
+            
+            setTimeout(() => {
+                formHeader.classList.remove('glitch');
+                alert('Запрос на доступ отправлен. Ожидайте ответа в зашифрованном канале.');
+                
+                // Возвращаем оригинальный заголовок
+                setTimeout(() => {
+                    formHeader.textContent = 'ВХОД В СИСТЕМУ';
+                }, 1000);
+            }, 2000);
+        });
+
+        // Реальная валидация при вводе
+        emailInput.addEventListener('input', function() {
+            if (validateEmail(this.value)) {
+                emailError.style.display = 'none';
+            }
+        });
+
+        passwordInput.addEventListener('input', function() {
+            if (validatePassword(this.value)) {
+                passwordError.style.display = 'none';
+            }
+        });
+
+        // Анимация матрицы
+        function animateMatrix() {
+            drawMatrix();
+            requestAnimationFrame(animateMatrix);
+        }
+        
+        // Изменение размера canvas при изменении размера окна
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        // Запуск анимации
+        animateMatrix();
+        
+        // Случайные эффекты glitch
+        setInterval(() => {
+            if(Math.random() > 0.7) {
+                const elements = document.querySelectorAll('.glitch-effect');
+                elements.forEach(el => {
+                    el.style.textShadow = `0 0 5px #${Math.floor(Math.random()*16777215).toString(16)}`;
+                    setTimeout(() => {
+                        el.style.textShadow = '0 0 10px #0f0';
+                    }, 100);
+                });
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Киберкоманда // Сообщение</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', 'Consolas', monospace;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #0f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #matrixCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.2;
+        }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #0f0, transparent);
+            box-shadow: 0 0 10px #0f0;
+            z-index: 1;
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .message-container {
+            width: 90%;
+            max-width: 800px;
+            background-color: rgba(5, 5, 10, 0.95);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 5px;
+            padding: 40px;
+            position: relative;
+            z-index: 2;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 0, 0.2),
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .message-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #0f0, #00ffaa, #0f0, #00ffaa);
+            z-index: -1;
+            border-radius: 7px;
+            animation: borderGlow 3s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .header h1 {
+            color: #0f0;
+            font-size: 36px;
+            text-shadow: 0 0 15px #0f0;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .header h1::after {
+            content: '_';
+            animation: cursorBlink 1s infinite;
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        @keyframes cursorBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .header p {
+            color: #8f8;
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        .message-box {
+            background-color: rgba(0, 20, 0, 0.3);
+            border: 1px solid rgba(0, 255, 0, 0.2);
+            border-radius: 5px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .message-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.02) 2px,
+                rgba(0, 255, 0, 0.02) 4px
+            );
+            pointer-events: none;
+        }
+
+        .message-content {
+            text-align: center;
+        }
+
+        .message-text {
+            font-size: 28px;
+            color: #0f0;
+            text-shadow: 0 0 10px #0f0;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        .message-subtext {
+            font-size: 18px;
+            color: #8f8;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .decoded-text {
+            font-size: 22px;
+            color: #0ff;
+            text-shadow: 0 0 8px #0ff;
+            margin-top: 25px;
+            padding: 15px;
+            background-color: rgba(0, 30, 30, 0.3);
+            border-left: 3px solid #0ff;
+            border-radius: 3px;
+        }
+
+        .terminal-output {
+            background-color: #001100;
+            border: 1px solid #0f0;
+            border-radius: 3px;
+            padding: 20px;
+            margin-top: 30px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        .terminal-line {
+            margin-bottom: 8px;
+            color: #8f8;
+        }
+
+        .terminal-line .prompt {
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        .terminal-line .command {
+            color: #8f8;
+        }
+
+        .terminal-line .output {
+            color: #0af;
+        }
+
+        .terminal-line .highlight {
+            color: #f0f;
+            text-shadow: 0 0 5px #f0f;
+            font-weight: bold;
+        }
+
+        .info-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .info-card {
+            background-color: rgba(0, 20, 0, 0.3);
+            border: 1px solid rgba(0, 255, 0, 0.2);
+            border-radius: 5px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .info-card:hover {
+            border-color: #0f0;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .info-card h3 {
+            color: #0f0;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px #0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-card p {
+            color: #8f8;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .back-btn {
+            display: block;
+            width: 200px;
+            margin: 40px auto 0;
+            padding: 15px;
+            background: linear-gradient(to right, #001100, #003300);
+            color: #0f0;
+            border: 1px solid #0a0;
+            border-radius: 3px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(to right, #002200, #004400);
+            border-color: #0f0;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+            text-shadow: 0 0 10px #0f0;
+            transform: translateY(-2px);
+        }
+
+        .back-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .back-btn:hover::before {
+            left: 100%;
+        }
+
+        .encryption-status {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: rgba(0, 30, 0, 0.3);
+            border: 1px solid #0a0;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #0f0;
+            box-shadow: 0 0 10px #0f0;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        .status-text {
+            color: #8f8;
+            font-size: 14px;
+        }
+
+        .timestamp {
+            color: #080;
+            font-size: 12px;
+        }
+
+        /* Анимация появления текста */
+        @keyframes typeWriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        .typing-text {
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 2px solid #0f0;
+            animation: 
+                typeWriter 3s steps(40, end),
+                cursorBlink 1s step-end infinite;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .message-container {
+                padding: 25px;
+                width: 95%;
+            }
+            
+            .message-text {
+                font-size: 22px;
+            }
+            
+            .message-subtext {
+                font-size: 16px;
+            }
+            
+            .header h1 {
+                font-size: 28px;
+            }
+            
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .message-text {
+                font-size: 20px;
+            }
+            
+            .decoded-text {
+                font-size: 18px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+
+        /* Эффект глитча */
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 #f0f;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 #0ff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(31px, 9999px, 94px, 0); }
+            5% { clip: rect(112px, 9999px, 76px, 0); }
+            10% { clip: rect(85px, 9999px, 77px, 0); }
+            15% { clip: rect(91px, 9999px, 32px, 0); }
+            20% { clip: rect(30px, 9999px, 73px, 0); }
+            25% { clip: rect(90px, 9999px, 22px, 0); }
+            30% { clip: rect(11px, 9999px, 14px, 0); }
+            35% { clip: rect(53px, 9999px, 39px, 0); }
+            100% { clip: rect(53px, 9999px, 39px, 0); }
+        }
+
+        @keyframes glitch-anim2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            5% { clip: rect(52px, 9999px, 74px, 0); }
+            10% { clip: rect(79px, 9999px, 85px, 0); }
+            15% { clip: rect(75px, 9999px, 5px, 0); }
+            20% { clip: rect(67px, 9999px, 61px, 0); }
+            25% { clip: rect(14px, 9999px, 79px, 0); }
+            30% { clip: rect(1px, 9999px, 66px, 0); }
+            35% { clip: rect(86px, 9999px, 30px, 0); }
+            100% { clip: rect(86px, 9999px, 30px, 0); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrixCanvas"></canvas>
+    <div class="scan-line"></div>
+    
+    <div class="message-container">
+        <div class="header">
+            <h1 class="glitch" data-text="// ШИФРОВАННОЕ СООБЩЕНИЕ">// ШИФРОВАННОЕ СООБЩЕНИЕ</h1>
+            <p>ПРОТОКОЛ: СЕКРЕТНО | КАТЕГОРИЯ: ОПЕРАТИВНЫЕ ДАННЫЕ</p>
+        </div>
+        
+        <div class="message-box">
+            <div class="message-content">
+                <div class="message-text typing-text" id="mainMessage">
+                    АГАЙ ЭРТЕН 9ГА БАРАЛЫЧЫ
+                </div>
+                
+                <div class="message-subtext">
+                    <i class="fas fa-lock"></i> ШИФРОВКА: AES-256 | КАНАЛ: ЗАЩИЩЕННЫЙ
+                </div>
+                
+                <div class="decoded-text">
+                    <i class="fas fa-unlock"></i> ДЕШИФРОВАНО: "АГАЙ ЭРТЕН 9ГА БАРАЛЫЧЫ"
+                </div>
+            </div>
+            <!-- Добавьте этот код ПОСЛЕ блока с классом "decoded-text" и ПЕРЕД блоком с классом "terminal-output" -->
+
+<div class="response-buttons" style="margin: 30px 0; text-align: center;">
+    <div style="margin-bottom: 15px; color: #8f8; font-size: 16px;">
+        <i class="fas fa-question-circle"></i> ПОДТВЕРДИТЕ ОТВЕТ:
+    </div>
+    
+    <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+        <!-- Кнопка ООБА -->
+        <button class="hack-btn confirm-btn" id="confirmYes" 
+                style="background: linear-gradient(to right, #001a00, #004400);
+                       border: 1px solid #0f0;
+                       color: #0f0;
+                       padding: 15px 40px;
+                       border-radius: 3px;
+                       font-size: 18px;
+                       font-weight: bold;
+                       cursor: pointer;
+                       transition: all 0.3s;
+                       text-transform: uppercase;
+                       letter-spacing: 2px;
+                       position: relative;
+                       overflow: hidden;">
+            <i class="fas fa-check-circle"></i> ООБА
+            <div style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; 
+                        background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.3), transparent);
+                        transition: 0.5s;"></div>
+        </button>
+        
+        <!-- Кнопка ЖОК -->
+        <button class="hack-btn confirm-btn" id="confirmNo"
+                style="background: linear-gradient(to right, #1a0000, #440000);
+                       border: 1px solid #f44;
+                       color: #f44;
+                       padding: 15px 40px;
+                       border-radius: 3px;
+                       font-size: 18px;
+                       font-weight: bold;
+                       cursor: pointer;
+                       transition: all 0.3s;
+                       text-transform: uppercase;
+                       letter-spacing: 2px;
+                       position: relative;
+                       overflow: hidden;">
+            <i class="fas fa-times-circle"></i> ЖОК
+            <div style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; 
+                        background: linear-gradient(90deg, transparent, rgba(255, 68, 68, 0.3), transparent);
+                        transition: 0.5s;"></div>
+        </button>
+    </div>
+    
+    <div id="responseStatus" style="margin-top: 20px; color: #8f8; font-size: 14px; min-height: 24px;">
+        <!-- Здесь будет отображаться статус ответа -->
+    </div>
+</div>
+
+<!-- Добавьте этот скрипт в конец файла, перед закрывающим тегом </body> -->
+<script>
+    // Обработчики для кнопок подтверждения
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmYes = document.getElementById('confirmYes');
+        const confirmNo = document.getElementById('confirmNo');
+        const responseStatus = document.getElementById('responseStatus');
+        
+        // Эффект при наведении на кнопки
+        const buttons = document.querySelectorAll('.confirm-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px)';
+                this.style.boxShadow = '0 10px 20px rgba(0, 255, 0, 0.3)';
+                this.querySelector('div').style.left = '100%';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+                this.querySelector('div').style.left = '-100%';
+            });
+        });
+        
+        // Обработчик для кнопки ООБА
+        confirmYes.addEventListener('click', function() {
+            // Анимация нажатия
+            this.style.transform = 'translateY(1px)';
+            this.style.boxShadow = 'inset 0 0 20px rgba(0, 255, 0, 0.3)';
+            
+            // Показываем статус
+            responseStatus.innerHTML = `
+                <div style="color: #0f0; animation: fadeIn 0.5s;">
+                    <i class="fas fa-check-circle"></i> ОТВЕТ ПРИНЯТ: <strong>ПОДТВЕРЖДАЮ</strong>
+                </div>
+                <div style="color: #8f8; font-size: 12px; margin-top: 5px;">
+                    Статус отправлен на сервер. Ожидайте дальнейших инструкций.
+                </div>
+            `;
+            
+            // Эффект подтверждения
+            setTimeout(() => {
+                this.style.background = 'linear-gradient(to right, #003300, #006600)';
+                this.style.borderColor = '#0f0';
+                this.style.boxShadow = '0 0 25px rgba(0, 255, 0, 0.5)';
+                
+                // Отключаем обе кнопки
+                confirmYes.disabled = true;
+                confirmNo.disabled = true;
+                confirmNo.style.opacity = '0.5';
+                confirmNo.style.cursor = 'not-allowed';
+                
+                // Добавляем в терминал запись
+                addToTerminal("ПОДТВЕРЖДЕНИЕ: Агент подтвердил участие в операции");
+            }, 300);
+        });
+        
+        // Обработчик для кнопки ЖОК
+        confirmNo.addEventListener('click', function() {
+            // Анимация нажатия
+            this.style.transform = 'translateY(1px)';
+            this.style.boxShadow = 'inset 0 0 20px rgba(255, 68, 68, 0.3)';
+            
+            // Показываем статус
+            responseStatus.innerHTML = `
+                <div style="color: #f44; animation: fadeIn 0.5s;">
+                    <i class="fas fa-times-circle"></i> ОТВЕТ ПРИНЯТ: <strong>ОТКЛОНЯЮ</strong>
+                </div>
+                <div style="color: #8f8; font-size: 12px; margin-top: 5px;">
+                    Статус отправлен командованию. Требуется подтверждение отказа.
+                </div>
+            `;
+            
+            // Эффект отказа
+            setTimeout(() => {
+                this.style.background = 'linear-gradient(to right, #330000, #660000)';
+                this.style.borderColor = '#f44';
+                this.style.boxShadow = '0 0 25px rgba(255, 68, 68, 0.5)';
+                
+                // Отключаем обе кнопки
+                confirmYes.disabled = true;
+                confirmNo.disabled = true;
+                confirmYes.style.opacity = '0.5';
+                confirmYes.style.cursor = 'not-allowed';
+                
+                // Добавляем в терминал запись
+                addToTerminal("ОТКАЗ: Агент отказался от участия в операции");
+            }, 300);
+        });
+        
+        // Функция для добавления записи в терминал
+        function addToTerminal(message) {
+            const terminal = document.querySelector('.terminal-output');
+            const newLine = document.createElement('div');
+            newLine.className = 'terminal-line';
+            newLine.innerHTML = `
+                <span class="prompt">agent@response:~$</span>
+                <span class="output">${message}</span>
+            `;
+            terminal.appendChild(newLine);
+            
+            // Прокручиваем терминал вниз
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        // Анимация появления
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    });
+</script>
+
+<!-- Добавьте эти стили в тег <style> -->
+<style>
+    /* Стили для кнопок */
+    .hack-btn:hover::before {
+        left: 100%;
+    }
+    
+    .confirm-btn:active {
+        transform: translateY(2px) !important;
+    }
+    
+    /* Анимация для статуса */
+    @keyframes pulseGlow {
+        0%, 100% { box-shadow: 0 0 5px currentColor; }
+        50% { box-shadow: 0 0 20px currentColor; }
+    }
+    
+    .confirm-btn:disabled {
+        cursor: not-allowed !important;
+    }
+    
+    .confirm-btn:disabled:hover {
+        transform: translateY(0) !important;
+        box-shadow: none !important;
+    }
+</style>
+        </div>
+        
+        <div class="terminal-output">
+            <div class="terminal-line">
+                <span class="prompt">cyber@terminal:~$</span>
+                <span class="command"> decode_message --cipher=AES256 --key=0x7F3A9B</span>
+            </div>
+            <div class="terminal-line">
+                <span class="output">Загружаем зашифрованный пакет...</span>
+            </div>
+            <div class="terminal-line">
+                <span class="output">Проверка целостности данных... <span class="highlight">✓ ПРОЙДЕНА</span></span>
+            </div>
+            <div class="terminal-line">
+                <span class="output">Применяем алгоритм дешифровки AES-256...</span>
+            </div>
+            <div class="terminal-line">
+                <span class="output">Исходный текст: "АГАЙ ЭРТЕН 9ГА БАРАЛЫЧЫ"</span>
+            </div>
+            <div class="terminal-line">
+                <span class="output">Расшифровка: "<span class="highlight">АГАЙ ЭРТЕН 9ГА БАРАЛЫЧЫ </span>"</span>
+            </div>
+            <div class="terminal-line">
+                <span class="output">Статус: <span class="highlight">СООБЩЕНИЕ УСПЕШНО ДЕШИФРОВАНО</span></span>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-card">
+                <h3><i class="fas fa-calendar-alt"></i> ДЕТАЛИ МИССИИ</h3>
+                <p>• Дата: Завтрашний день<br>
+                   • Время: 09:00 по местному времени<br>
+                   • Место: Уточняется<br>
+                   • Код операции: NEPTUNE-7</p>
+            </div>
+            
+            <div class="info-card">
+                <h3><i class="fas fa-user-secret"></i> УЧАСТНИКИ</h3>
+                <p>• Агай: Командующий операцией<br>
+                   • Вы: Оперативник<br>
+                   • Дополнительные агенты: 2-3 чел.<br>
+                   • Статус команды: ГОТОВЫ</p>
+            </div>
+            
+            <div class="info-card">
+                <h3><i class="fas fa-tools"></i> ОБОРУДОВАНИЕ</h3>
+                <p>• Стандартный набор хакера<br>
+                   • Защищенные каналы связи<br>
+                   • Средства шифрования<br>
+                   • Резервные устройства</p>
+            </div>
+        </div>
+        
+        <div class="encryption-status">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <div class="status-text">СООБЩЕНИЕ ЗАШИФРОВАНО И ЗАЩИЩЕНО</div>
+            </div>
+            <div class="timestamp">
+                Создано: Сегодня 23:47:12 | Самоуничтожение: 24 часа
+            </div>
+        </div>
+        
+        <a href="javascript:history.back()" class="back-btn">
+            <i class="fas fa-arrow-left"></i> ВЕРНУТЬСЯ В ТЕРМИНАЛ
+        </a>
+    </div>
+
+    <script>
+        // Эффект падающих символов матрицы
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const symbols = "01АГАЙЭРТЕНБРАЛЫЧЫ";
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+        
+        for(let i = 0; i < columns; i++) {
+            drops[i] = Math.floor(Math.random() * canvas.height / fontSize) * fontSize;
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 10, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#0f0';
+            ctx.font = `${fontSize}px monospace`;
+            
+            for(let i = 0; i < drops.length; i++) {
+                const text = symbols[Math.floor(Math.random() * symbols.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                
+                drops[i]++;
+            }
+        }
+        
+        // Анимация матрицы
+        function animateMatrix() {
+            drawMatrix();
+            requestAnimationFrame(animateMatrix);
+        }
+        
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        animateMatrix();
+        
+        // Эффект печатающегося текста
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageText = document.getElementById('mainMessage');
+            const originalText = messageText.textContent;
+            messageText.textContent = '';
+            
+            let i = 0;
+            const typeWriter = () => {
+                if (i < originalText.length) {
+                    messageText.textContent += originalText.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 100);
+                } else {
+                    // После завершения печати добавляем мигающий курсор
+                    messageText.style.borderRight = '2px solid #0f0';
+                    messageText.style.animation = 'cursorBlink 1s step-end infinite';
+                }
+            };
+            
+            // Запускаем анимацию с задержкой
+            setTimeout(typeWriter, 500);
+            
+            // Случайные эффекты глитча для заголовка
+            setInterval(() => {
+                if(Math.random() > 0.8) {
+                    const glitchElements = document.querySelectorAll('.glitch');
+                    glitchElements.forEach(el => {
+                        el.style.textShadow = `0 0 10px #${Math.floor(Math.random()*16777215).toString(16)}`;
+                        setTimeout(() => {
+                            el.style.textShadow = 'none';
+                        }, 50);
+                    });
+                }
+            }, 3000);
+            
+            // Анимация точек статуса
+            const statusDots = document.querySelectorAll('.status-dot');
+            setInterval(() => {
+                statusDots.forEach(dot => {
+                    dot.style.opacity = Math.random() > 0.5 ? 1 : 0.7;
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
